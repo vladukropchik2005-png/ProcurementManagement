@@ -1,4 +1,6 @@
-﻿using ProcurementManagement.Domain;
+﻿using System;
+using System.Linq; // for LINQ helpers like Sum(), ToList()
+using ProcurementManagement.Domain;
 using ProcurementManagement.Services;
 using static ProcurementManagement.UI.ConsoleHelpers;
 
@@ -95,7 +97,7 @@ namespace ProcurementManagement.UI
                 Console.WriteLine();
                 Console.WriteLine("[N]ext  [P]rev  [S]ize  [F]ilter  [B]ack");
                 if (current.Role == UserRole.Admin)
-                    Console.WriteLine("[C]reate item  [E] <index>  |  [E] ID <guid>");
+                    Console.WriteLine("[C]reate item  [E]dit <index>  |  [E]dit ID <guid>");
 
                 var cmdLine = (Console.ReadLine() ?? "").Trim();
                 if (string.Equals(cmdLine, "b", StringComparison.OrdinalIgnoreCase)) break;
@@ -110,9 +112,9 @@ namespace ProcurementManagement.UI
                     {
                         var name = Prompt("Name: ");
                         var tgt = PromptDecimal("Target level (optional, 0 = skip)", 0m);
-                        decimal? tl = tgt > 0m ? tgt : null;
+                        decimal? tl = tgt > 0m ? tgt : (decimal?)null;
                         var lp = PromptDecimal("Last purchase price (optional, 0 = skip)", 0m);
-                        decimal? lpp = lp > 0m ? lp : null;
+                        decimal? lpp = lp > 0m ? lp : (decimal?)null;
 
                         var created = _stock.CreateAsync(name, tl, lpp).GetAwaiter().GetResult();
                         Console.WriteLine($"Created: {created.Id} | {created.Name}");
@@ -174,19 +176,29 @@ namespace ProcurementManagement.UI
 
                 OrderStatus? st = Enum.TryParse<OrderStatus>(statusStr, true, out var stv) ? stv : null;
 
-                var data = _orders.Query(
+                // materialize as List<Order> explicitly
+                var dataList = _orders.Query(
                     supplierId: supplierId,
                     stockItemId: stockId,
                     status: st,
                     sortBy: sortBy
-                );
+                ).ToList();
 
-                var pageData = ConsoleHelpers.Page(data, page, pageSize).ToList();
+                // current page also as List<Order>
+                var pageData = ConsoleHelpers.Page(dataList, page, pageSize).ToList();
+
                 for (int i = 0; i < pageData.Count; i++)
                 {
-                    var o = pageData[i];
-                    var supName = _suppliers.GetById(o.SupplierId)?.Name ?? "(unknown)";
-                    Console.WriteLine($"[{i + 1}] {o.Id} | {o.CreatedAt:u} | {o.Status,-10} | Supplier: {supName,-20} | Items: {o.Items.Count,2} | Total: {o.Total,10:0.00}");
+                    var o = pageData[i]; // Order
+                    var supplier = _suppliers.GetById(o.SupplierId);
+                    var supName = supplier?.Name ?? "(unknown)";
+
+                    // total quantity across all order lines
+                    var totalQty = o.Items?.Sum(it => it.Quantity) ?? 0;
+
+                    Console.WriteLine(
+                        $"[{i + 1}] {o.Id} | {o.CreatedAt:u} | {o.Status,-10} | Supplier: {supName,-20} | Items: {o.Items?.Count ?? 0,2} | Qty: {totalQty,4} | Total: {o.Total,10:0.00}"
+                    );
                 }
 
                 Console.WriteLine();
@@ -209,7 +221,7 @@ namespace ProcurementManagement.UI
                         if (supplier is null) { Console.WriteLine("Cancelled."); Pause(); continue; }
 
                         // 2) select stock lines via indexed list loop
-                        var lines = new List<(Guid stockId, decimal qty, decimal price)>();
+                        var lines = new System.Collections.Generic.List<(Guid stockId, decimal qty, decimal price)>();
                         while (true)
                         {
                             var chosen = SelectStockItem();
@@ -249,7 +261,8 @@ namespace ProcurementManagement.UI
                         // Try index first
                         if (int.TryParse(pick, out var idx))
                         {
-                            var chosen = (idx >= 1 && idx <= pageData.Count) ? pageData[idx - 1] : null;
+                            var dataPage = ConsoleHelpers.Page(dataList, page, pageSize).ToList();
+                            var chosen = (idx >= 1 && idx <= dataPage.Count) ? dataPage[idx - 1] : null;
                             if (chosen is null)
                             {
                                 Console.WriteLine("Invalid index.");
@@ -290,7 +303,6 @@ namespace ProcurementManagement.UI
                         Pause();
                         continue;
                     }
-
                 }
             }
         }
