@@ -3,9 +3,7 @@ using ProcurementManagement.Data;
 
 namespace ProcurementManagement.Services
 {
-    /// <summary>
-    /// Trivial authentication for demo purposes (plaintext passwords).
-    /// </summary>
+    
     public class AuthService
     {
         private readonly JsonStore _store;
