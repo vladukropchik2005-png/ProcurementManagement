@@ -3,16 +3,14 @@ using ProcurementManagement.Domain;
 
 namespace ProcurementManagement.Services
 {
-    /// <summary>
-    /// Stock service: listing, search, create, and manual quantity edits.
-    /// </summary>
+    
     public class StockService
     {
         private readonly JsonStore _store;
 
         public StockService(JsonStore store) => _store = store;
 
-        // Simple search by name (contains). If query null/empty -> return all.
+        
         public IEnumerable<Stock> Search(string? query = null)
         {
             var q = _store.Db.Stock.AsEnumerable();
@@ -21,7 +19,7 @@ namespace ProcurementManagement.Services
             return q.OrderBy(s => s.Name);
         }
 
-        // Create a new stock item (quantity starts at 0)
+        
         public async Task<Stock> CreateAsync(string name, decimal? targetLevel = null, decimal? lastPurchasePrice = null)
         {
             var item = new Stock
@@ -36,7 +34,7 @@ namespace ProcurementManagement.Services
             return item;
         }
 
-        // Manual quantity edit (admin action): sets absolute value
+        
         public async Task<bool> SetQuantityAsync(Guid stockId, decimal newQuantity)
         {
             if (newQuantity < 0m) return false;

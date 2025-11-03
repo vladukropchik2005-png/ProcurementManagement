@@ -3,19 +3,17 @@ using ProcurementManagement.Domain;
 
 namespace ProcurementManagement.Services
 {
-    /// <summary>
-    /// Orders: query with filters/sorting, create, and status updates (with stock update on Completed).
-    /// </summary>
+    
     public class OrderService
     {
         private readonly JsonStore _store;
 
         public OrderService(JsonStore store) => _store = store;
 
-        // Query with optional filters and sorting
+        
         public IEnumerable<Order> Query(
             Guid? supplierId = null,
-            Guid? stockItemId = null,      // filter orders containing this stock item
+            Guid? stockItemId = null,      
             OrderStatus? status = null,
             DateTime? from = null,
             DateTime? to = null,
@@ -32,13 +30,13 @@ namespace ProcurementManagement.Services
             q = sortBy switch
             {
                 "date_asc" => q.OrderBy(o => o.CreatedAt),
-                _ => q.OrderByDescending(o => o.CreatedAt) // date_desc (default)
+                _ => q.OrderByDescending(o => o.CreatedAt) 
             };
 
             return q;
         }
 
-        // Create new order
+        
         public async Task<Order> CreateAsync(Guid supplierId, IEnumerable<(Guid stockId, decimal qty, decimal price)> lines)
         {
             var items = new List<OrderItem>();
@@ -46,7 +44,7 @@ namespace ProcurementManagement.Services
             foreach (var (stockId, qty, price) in lines)
             {
                 if (qty <= 0m || price < 0m) throw new ArgumentException("Invalid qty/price.");
-                // Validate references
+                
                 if (!_store.Db.Stock.Any(s => s.Id == stockId))
                     throw new ArgumentException("Stock item not found.");
 
@@ -64,7 +62,7 @@ namespace ProcurementManagement.Services
             var order = new Order
             {
                 SupplierId = supplierId,
-                Status = OrderStatus.InProgress, // or Pending if you keep it
+                Status = OrderStatus.InProgress, 
                 CreatedAt = DateTime.UtcNow,
                 Items = items
             };
@@ -74,7 +72,7 @@ namespace ProcurementManagement.Services
             return order;
         }
 
-        // Change status; when Completed -> add quantities to stock once
+        
         public async Task<bool> ChangeStatusAsync(Guid orderId, OrderStatus newStatus)
         {
             var order = _store.Db.Orders.FirstOrDefault(o => o.Id == orderId);
@@ -82,13 +80,13 @@ namespace ProcurementManagement.Services
 
             if (order.Status == newStatus) return true;
 
-            // If moving to Completed, update stock quantities
+            
             if (newStatus == OrderStatus.Completed && order.Status != OrderStatus.Completed)
             {
                 foreach (var line in order.Items)
                 {
                     var stock = _store.Db.Stock.FirstOrDefault(s => s.Id == line.StockItemId);
-                    if (stock is null) continue; // inconsistent data, skip safely
+                    if (stock is null) continue; 
                     stock.QuantityOnHand += line.Quantity;
                     stock.LastPurchasePrice = line.UnitPrice;
                 }

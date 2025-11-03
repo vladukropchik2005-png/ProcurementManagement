@@ -3,9 +3,7 @@ using ProcurementManagement.Data;
 
 namespace ProcurementManagement.Services
 {
-    /// <summary>
-    /// Basic lookup/search for suppliers + create.
-    /// </summary> 
+    
     public class SupplierService
     {
         private readonly JsonStore _store;

@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Linq; // for LINQ helpers like Sum(), ToList()
+using System.Linq; 
 using ProcurementManagement.Domain;
 using ProcurementManagement.Services;
 using static ProcurementManagement.UI.ConsoleHelpers;
 
 namespace ProcurementManagement.UI
 {
-    /// <summary>
-    /// Console main menu with role-based options and index-based selection UX.
-    /// </summary>
+    
     public class MainMenu
     {
         private readonly AuthService _auth;
@@ -71,7 +69,7 @@ namespace ProcurementManagement.UI
             }
         }
 
-        // ----------------- STOCK -----------------
+        
         private void StockMenu(User current)
         {
             var page = 1;
@@ -86,7 +84,7 @@ namespace ProcurementManagement.UI
 
                 var list = _stock.Search(lastQuery).ToList();
 
-                // render page with 1-based indexes
+                
                 var pageData = ConsoleHelpers.Page(list, page, pageSize).ToList();
                 for (int i = 0; i < pageData.Count; i++)
                 {
@@ -122,11 +120,11 @@ namespace ProcurementManagement.UI
                         continue;
                     }
 
-                    // Commands: "e 3" or "e id <guid>"
+                    
                     var parts = cmdLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     if (parts.Length >= 2 && string.Equals(parts[0], "e", StringComparison.OrdinalIgnoreCase))
                     {
-                        // by index
+                        
                         if (parts.Length == 2 && int.TryParse(parts[1], out var idx))
                         {
                             var item = (idx >= 1 && idx <= pageData.Count) ? pageData[idx - 1] : null;
@@ -139,7 +137,7 @@ namespace ProcurementManagement.UI
                             Pause(); continue;
                         }
 
-                        // by GUID
+                        
                         if (parts.Length == 3 && string.Equals(parts[1], "id", StringComparison.OrdinalIgnoreCase))
                         {
                             if (!Guid.TryParse(parts[2], out var gid)) { Console.WriteLine("Invalid GUID."); Pause(); continue; }
@@ -157,7 +155,7 @@ namespace ProcurementManagement.UI
             }
         }
 
-        // ----------------- ORDERS -----------------
+        
         private void OrdersMenu(User current)
         {
             var page = 1;
@@ -176,7 +174,7 @@ namespace ProcurementManagement.UI
 
                 OrderStatus? st = Enum.TryParse<OrderStatus>(statusStr, true, out var stv) ? stv : null;
 
-                // materialize as List<Order> explicitly
+                
                 var dataList = _orders.Query(
                     supplierId: supplierId,
                     stockItemId: stockId,
@@ -184,16 +182,16 @@ namespace ProcurementManagement.UI
                     sortBy: sortBy
                 ).ToList();
 
-                // current page also as List<Order>
+                
                 var pageData = ConsoleHelpers.Page(dataList, page, pageSize).ToList();
 
                 for (int i = 0; i < pageData.Count; i++)
                 {
-                    var o = pageData[i]; // Order
+                    var o = pageData[i]; 
                     var supplier = _suppliers.GetById(o.SupplierId);
                     var supName = supplier?.Name ?? "(unknown)";
 
-                    // total quantity across all order lines
+                    
                     var totalQty = o.Items?.Sum(it => it.Quantity) ?? 0;
 
                     Console.WriteLine(
@@ -216,16 +214,16 @@ namespace ProcurementManagement.UI
                 {
                     if (cmd == "a")
                     {
-                        // 1) select supplier via indexed list
+                        
                         var supplier = SelectSupplier();
                         if (supplier is null) { Console.WriteLine("Cancelled."); Pause(); continue; }
 
-                        // 2) select stock lines via indexed list loop
+                        
                         var lines = new System.Collections.Generic.List<(Guid stockId, decimal qty, decimal price)>();
                         while (true)
                         {
                             var chosen = SelectStockItem();
-                            if (chosen is null) break; // empty to finish
+                            if (chosen is null) break; 
                             var qty = PromptDecimal("Quantity", 1m);
                             var price = PromptDecimal("Unit price", 0m);
                             lines.Add((chosen.Value, qty, price));
@@ -253,12 +251,12 @@ namespace ProcurementManagement.UI
                     }
                     else if (cmd == "u")
                     {
-                        // Allow picking order by visible index on current page OR by GUID
+                        
                         var pick = Prompt("Enter order index on page or 'id <GUID>': ").Trim();
 
                         Guid? orderId = null;
 
-                        // Try index first
+                        
                         if (int.TryParse(pick, out var idx))
                         {
                             var dataPage = ConsoleHelpers.Page(dataList, page, pageSize).ToList();
@@ -273,7 +271,7 @@ namespace ProcurementManagement.UI
                         }
                         else
                         {
-                            // Maybe "id <GUID>"
+                            
                             var parts = pick.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                             if (parts.Length == 2 &&
                                 parts[0].Equals("id", StringComparison.OrdinalIgnoreCase) &&
@@ -307,8 +305,8 @@ namespace ProcurementManagement.UI
             }
         }
 
-        // Let the user choose a supplier by index (with search & pagination).
-        // Returns the SupplierId (Guid) or null if cancelled.
+        
+        
         private Guid? SelectSupplier()
         {
             var page = 1;
@@ -350,8 +348,8 @@ namespace ProcurementManagement.UI
             }
         }
 
-        // Let the user choose a stock item by index (with search & pagination).
-        // Returns the StockId (Guid) or null if cancelled/finished.
+        
+        
         private Guid? SelectStockItem()
         {
             var page = 1;
@@ -393,7 +391,7 @@ namespace ProcurementManagement.UI
             }
         }
 
-        // ----------------- SUPPLIERS -----------------
+        
         private void SuppliersMenu(User current)
         {
             var page = 1;
@@ -447,7 +445,7 @@ namespace ProcurementManagement.UI
             }
         }
 
-        // ----------------- CREATE USER (admin) -----------------
+        
         private void CreateUserMenu()
         {
             Console.Clear();

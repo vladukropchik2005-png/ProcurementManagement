@@ -12,13 +12,13 @@ namespace ProcurementManagement.Services
 
         public User? Login(string login, string password)
         {
-            // NOTE: For production use a proper password hashing strategy.
+            
             return _store.Db.Users.FirstOrDefault(u =>
                 string.Equals(u.Login, login, StringComparison.OrdinalIgnoreCase) &&
                 u.Password == password);
         }
 
-        // --- Added: simple user creation for Admin menu ---
+        
         public async Task<User> CreateUserAsync(string login, string password, UserRole role)
         {
             if (string.IsNullOrWhiteSpace(login))
